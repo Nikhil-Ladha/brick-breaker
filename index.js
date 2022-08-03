@@ -2,8 +2,8 @@ const startBtn = document.querySelector("#start");
 const canvas = document.querySelector("#canvas");
 const ctx = canvas.getContext("2d");
 const mainMenu = document.querySelector("#main-menu");
-let canvasWidth = 0;
-let canvasHeight = 0;
+let canvasWidth = 1100;
+let canvasHeight = 800;
 let triggerCanvas;
 const ballRadius = 15;
 let board = {
@@ -16,24 +16,26 @@ let ball = {
 };
 let dx = 2, dy = -2;
 let direction = "";
+let bricksMatrix = [];
+const brickWidth = 95;
+const brickHeight = 20;
+const brickPadding = 10;
+const brickOffsetTop = 30;
+const brickOffsetLeft = 30;
+const brickColumn = 10;
+const brickRow = 6;
+let timeout;
 
-const resize = () => {
-    // Subtracting 2 for border width
-    canvas.width = window.innerWidth - 2;
-    canvas.height = window.innerHeight - 2;
-    canvasWidth = canvas.width;
-    canvasHeight = canvas.height;
+for(let i = 0; i < brickRow; i++) {
+    bricksMatrix[i] = [];
+    for(let j = 0; j< brickColumn; j++) {
+        bricksMatrix[i][j] = {
+            x: 0,
+            y: 0,
+            show: 1
+        }
+    }
 }
-
-// Initialise the canvas widht, height
-resize();
-
-window.addEventListener('resize', () => {
-    resize();
-
-    if (canvas.style.display == "block")
-        startGame();
-});
 
 startBtn.addEventListener("click", () => {
     mainMenu.style.display = "none";
@@ -56,14 +58,60 @@ const paintBall = () => {
     ctx.strokeStyle = "black"
     ctx.stroke();
     ctx.closePath();
-    ball.x += dx;
-    ball.y += dy;
+}
+
+const paintBricks = () => {
+
+    for(let i = 0; i < brickRow; i++) {
+        let yPos = brickOffsetTop + i*(brickHeight + brickPadding);
+        for(let j = 0; j< brickColumn; j++) {
+            let xPos = brickOffsetLeft + j*(brickWidth + brickPadding);
+            ctx.fillStyle = "orange";
+            ctx.fillRect(xPos, yPos, brickWidth, brickHeight);
+            ctx.strokeStyle = "black";
+            ctx.strokeRect(xPos, yPos, brickWidth, brickHeight);
+            bricksMatrix[i][j] = {
+                x: xPos,
+                y: yPos,
+                show: 1
+            }
+        }
+    }
+}
+
+const checkCollision = () => {
+
+    for(let i = 0; i < brickRow; i++) {
+        for(let j = 0; j < brickColumn; j++) {
+            let brick = bricksMatrix[i][j];
+            if(brick.show && ball.x > brick.x && ball.x < (brick.x + brickWidth) &&
+               ball.y > brick.y && ball.y < (brick.y + brickHeight)) {
+                    dy = -dy;
+                    brick.show = 0;
+            }
+            if(brick.show) {
+                ctx.fillStyle = "orange";
+                ctx.fillRect(brick.x, brick.y, brickWidth, brickHeight);
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(brick.x, brick.y, brickWidth, brickHeight);
+            }
+        }
+    }
 }
 
 const paintCanvas = () => {
 
     // Clear the canvas before next render
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    // Paint board
+    paintBoard();
+
+    // Paint ball
+    paintBall();
+
+    // Check collision and repaint bricks
+    checkCollision();
 
     // Update board x1, x2 values based on direction and position
     if(direction && direction == "right" && board.x2 < canvasWidth) {
@@ -75,31 +123,39 @@ const paintCanvas = () => {
     }
 
     // Update ball position
-    if((ball.y - 15) <= 0 || (ball.y + 15) >= canvasHeight)  {
+    if((ball.y - ballRadius) <= 0 || (ball.y + ballRadius) >= canvasHeight)  {
         dy = -dy;
     }
 
-    if((ball.x - 15) <= 0 || (ball.x + 15) >= canvasWidth) {
+    if((ball.x - ballRadius) <= 0 || (ball.x + ballRadius) >= canvasWidth) {
         dx = -dx;
     }
 
     // If ball touches the board
-    if(((ball.y + 15) > canvasHeight - 50) && ((ball.y - 15) < canvasHeight - 30)) {
-        if((ball.x + 15 > board.x1) && (ball.x + 15 < board.x2)) {
+    if(((ball.y + ballRadius) > canvasHeight - 50) && ((ball.y - ballRadius) < canvasHeight - 30)) {
+        if((ball.x + ballRadius > board.x1) && (ball.x + ballRadius < board.x2)) {
             dy = -dy;
-        } else if((ball.x + 15 == board.x1) || (ball.x + 15 == board.x2)) {
+        } else if((ball.x + ballRadius == board.x1) || (ball.x + ballRadius == board.x2)) {
             dy = -dy;
             dx = -dx;
         }
     }
 
-    // Paint board
-    paintBoard();
+    // Game over if ball goes below the board
+    if((ball.y + 15) > canvasHeight - 30 && !((ball.x + ballRadius > board.x1) && (ball.x + ballRadius < board.x2))) {
+        gameOver();
+    }
 
-    // Paint ball
-    paintBall();
+    // Update ball position
+    ball.x += dx;
+    ball.y += dy;
+}
 
-    setTimeout(paintCanvas, 10);
+const gameOver = () => {
+    clearInterval(timer);
+    dx = 2;
+    dy = -2;
+    startGame();
 }
 
 const startGame = () => {
@@ -116,7 +172,10 @@ const startGame = () => {
         y: canvasHeight - 65
     };
 
-    paintCanvas();
+    // Paint initial bricks
+    paintBricks();
+
+    timer = setInterval(paintCanvas, 5);
 
     document.addEventListener("keydown", (event) => {
         const keyCode = event.code || event.key;
