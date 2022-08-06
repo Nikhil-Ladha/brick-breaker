@@ -88,9 +88,30 @@ main {
 /* Start Button */
 
 button#start {
-    background-color: gray;
+    background-color: #bfbfbf;
     border-radius: 0.75rem;
     border: 1px solid white;
+}
+
+/* Result */
+
+#result-section {
+    display: none;
+    position: absolute;
+    top: 16rem;
+    left: 0;
+    right: 0;
+}
+
+#result-section button {
+    border: 1px solid;
+    border-radius: 0.25rem;
+    box-shadow: none;
+}
+
+#result {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
 }
 
 

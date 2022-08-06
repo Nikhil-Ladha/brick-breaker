@@ -2,6 +2,9 @@ const startBtn = document.querySelector("#start");
 const canvas = document.querySelector("#canvas");
 const ctx = canvas.getContext("2d");
 const mainMenu = document.querySelector("#main-menu");
+const result = document.querySelector("#result");
+const resultSection = document.querySelector("#result-section");
+const playAgain = document.querySelector("#retry");
 let canvasWidth = 1100;
 let canvasHeight = 800;
 let triggerCanvas;
@@ -40,6 +43,11 @@ for(let i = 0; i < brickRow; i++) {
 startBtn.addEventListener("click", () => {
     mainMenu.style.display = "none";
     canvas.style.display = "block";
+    startGame();
+})
+
+playAgain.addEventListener("click", () => {
+    resultSection.style.display = "none";
     startGame();
 })
 
@@ -99,6 +107,24 @@ const checkCollision = () => {
     }
 }
 
+const gameComplete = () => {
+
+    let isComplete = 1;
+    for(let i = 0; i < brickRow; i++) {
+        for(let j = 0; j < brickColumn; j++) {
+            let brick = bricksMatrix[i][j];
+            if(brick.show) {
+                isComplete = 0;
+                break;
+            }
+        }
+    }
+
+    if (isComplete) {
+        gameOver("YOU WON!");
+    }
+}
+
 const paintCanvas = () => {
 
     // Clear the canvas before next render
@@ -112,6 +138,9 @@ const paintCanvas = () => {
 
     // Check collision and repaint bricks
     checkCollision();
+
+    // Game Complete
+    gameComplete();
 
     // Update board x1, x2 values based on direction and position
     if(direction && direction == "right" && board.x2 < canvasWidth) {
@@ -143,7 +172,7 @@ const paintCanvas = () => {
 
     // Game over if ball goes below the board
     if((ball.y + 15) > canvasHeight - 30 && !((ball.x + ballRadius > board.x1) && (ball.x + ballRadius < board.x2))) {
-        gameOver();
+        gameOver("GAME OVER!");
     }
 
     // Update ball position
@@ -151,11 +180,13 @@ const paintCanvas = () => {
     ball.y += dy;
 }
 
-const gameOver = () => {
+const gameOver = (gameResult) => {
     clearInterval(timer);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     dx = 2;
     dy = -2;
-    startGame();
+    result.innerHTML = gameResult;
+    resultSection.style.display = "block";
 }
 
 const startGame = () => {
@@ -175,7 +206,7 @@ const startGame = () => {
     // Paint initial bricks
     paintBricks();
 
-    timer = setInterval(paintCanvas, 5);
+    timer = setInterval(paintCanvas, 6);
 
     document.addEventListener("keydown", (event) => {
         const keyCode = event.code || event.key;
